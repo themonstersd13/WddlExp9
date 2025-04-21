@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat Room</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+
+  <div class="w-full max-w-md bg-white shadow-lg rounded-lg overflow-hidden flex flex-col h-[80vh]">
+    <div class="bg-indigo-600 text-white text-xl font-bold px-4 py-3">
+      Real-Time Chat Room
+    </div>
+    
+    <div class="flex flex-col items-center p-4">
+      <h2 class="mb-4">Enter Room Code</h2>
+      <form id="roomForm" class="flex mb-4">
+        <input 
+          type="text" 
+          id="roomCodeInput" 
+          placeholder="Enter Room Code" 
+          class="px-4 py-2 border border-gray-300 rounded-l-md"
+        />
+        <button 
+          type="submit" 
+          class="bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700 transition-all duration-200"
+        >
+          Join
+        </button>
+      </form>
+    </div>
+
+    <ul id="messages" class="flex-1 px-4 py-2 overflow-y-auto text-gray-800 space-y-2">
+      <!-- Messages will appear here -->
+    </ul>
+
+    <form id="form" class="flex items-center border-t border-gray-300 hidden">
+      <input 
+        id="input" 
+        autocomplete="off" 
+        placeholder="Type a message..." 
+        class="flex-1 px-4 py-2 text-gray-700 focus:outline-none"
+      />
+      <button 
+        class="bg-indigo-600 text-white px-4 py-2 hover:bg-indigo-700 transition-all duration-200"
+      >
+        Send
+      </button>
+    </form>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
