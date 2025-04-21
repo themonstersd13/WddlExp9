@@ -4,100 +4,74 @@ const input = document.getElementById('input');
 const messages = document.getElementById('messages');
 const roomForm = document.getElementById('roomForm');
 const roomCodeInput = document.getElementById('roomCodeInput');
+const changeRoomBtn = document.getElementById('changeRoomBtn');
+const changeRoomContainer = document.getElementById('changeRoomContainer');
 
-// Check if the user has already joined a room (using localStorage)
+function joinRoom(roomCode) {
+  socket.emit('join room', roomCode);
+  document.title = `Chat Room: ${roomCode}`;
+  roomForm.classList.add('hidden');
+  form.classList.remove('hidden');
+  changeRoomContainer.classList.remove('hidden');
+  localStorage.setItem('roomCode', roomCode);
+}
+
+function leaveRoom() {
+  localStorage.removeItem('roomCode');
+  document.title = 'Chat Room';
+  form.classList.add('hidden');
+  roomForm.classList.remove('hidden');
+  changeRoomContainer.classList.add('hidden');
+  messages.innerHTML = '';
+  roomCodeInput.value = '';
+}
+
+// Auto join saved room
 const savedRoomCode = localStorage.getItem('roomCode');
 if (savedRoomCode) {
   roomCodeInput.value = savedRoomCode;
-  socket.emit('join room', savedRoomCode);
-  document.title = `Chat Room: ${savedRoomCode}`;
-  roomForm.classList.add('hidden');
-  form.classList.remove('hidden');
+  joinRoom(savedRoomCode);
 }
 
-// Fetch previous messages for the room when the user joins
+// Join room on form submit
 roomForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const roomCode = roomCodeInput.value.trim();
-  if (roomCode) {
-    socket.emit('join room', roomCode);
-
-    // Save the room code to localStorage so user stays in the room after refresh
-    localStorage.setItem('roomCode', roomCode);
-
-    // Hide the room code form and show the chat form
-    roomForm.classList.add('hidden');
-    form.classList.remove('hidden');
-
-    // Update the page title to include the room code
-    document.title = `Chat Room: ${roomCode}`;
-  }
+  if (roomCode) joinRoom(roomCode);
 });
 
-// Send a new message when the form is submitted
+// Change room button handler
+changeRoomBtn.addEventListener('click', () => {
+  leaveRoom();
+});
+
+// Send message
 form.addEventListener('submit', function (e) {
   e.preventDefault();
   const roomCode = localStorage.getItem('roomCode');
   if (input.value.trim()) {
     socket.emit('chat message', input.value.trim(), roomCode);
-    input.value = '';  // Clear the input field
+    input.value = '';
   }
 });
 
-// Listen for previous messages to be displayed when the user joins the room
+// Load previous messages
 socket.on('previous messages', (messagesArray) => {
-  messages.innerHTML = ''; // Clear existing messages
+  messages.innerHTML = '';
   messagesArray.forEach((msgObj) => {
     const item = document.createElement('li');
     item.textContent = msgObj.message;
     item.className = 'bg-gray-200 px-3 py-2 rounded-md w-fit max-w-full';
     messages.appendChild(item);
   });
-  messages.scrollTop = messages.scrollHeight; // Scroll to the latest message
+  messages.scrollTop = messages.scrollHeight;
 });
 
-// Display new messages in real-time
+// Show new message
 socket.on('chat message', (msg) => {
   const item = document.createElement('li');
   item.textContent = msg;
   item.className = 'bg-gray-200 px-3 py-2 rounded-md w-fit max-w-full';
   messages.appendChild(item);
-  messages.scrollTop = messages.scrollHeight; // Scroll to the latest message
-});
-const Message = require('./models/Message'); // Import your Message model
-
-io.on('connection', (socket) => {
-  console.log('⚡ A user connected');
-
-  socket.on('join room', async (roomCode) => {
-    socket.join(roomCode);
-    console.log(`🚪 User joined room: ${roomCode}`);
-
-    // Fetch previous messages for the room
-    try {
-      const messages = await Message.find({ roomCode }).sort({ timestamp: 1 });
-      socket.emit('previous messages', messages); // Send previous messages to the client
-    } catch (err) {
-      console.error('❌ Error fetching previous messages:', err);
-    }
-  });
-
-  socket.on('chat message', async (msg, roomCode) => {
-    io.to(roomCode).emit('chat message', msg); // Broadcast the new message to the room
-
-    // Save the new message to MongoDB
-    try {
-      const newMessage = new Message({
-        roomCode: roomCode,
-        message: msg,
-      });
-      await newMessage.save();
-    } catch (err) {
-      console.error('❌ Error saving message:', err);
-    }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('🔌 A user disconnected');
-  });
+  messages.scrollTop = messages.scrollHeight;
 });
