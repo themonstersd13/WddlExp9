@@ -35,10 +35,19 @@ function getRoomModel(roomCode) {
 io.on('connection', (socket) => {
   console.log('⚡ A user connected');
 
-  socket.on('join room', (roomCode) => {
+  socket.on('join room', async (roomCode) => {
     socket.join(roomCode);
     console.log(`🚪 User joined room: ${roomCode}`);
+  
+    try {
+      const RoomModel = getRoomModel(roomCode);
+      const previousMessages = await RoomModel.find().sort({ timestamp: 1 }).lean();
+      socket.emit('previous messages', previousMessages);
+    } catch (err) {
+      console.error('❌ Error loading previous messages:', err);
+    }
   });
+  
 
   socket.on('chat message', async (msg, roomCode) => {
     io.to(roomCode).emit('chat message', msg);
