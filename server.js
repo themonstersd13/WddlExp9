@@ -4,53 +4,57 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const mongoose = require('mongoose');
-const Message = require('./models/Message');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Connect MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('✅ MongoDB Connected'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI).then(() => console.log('✅ MongoDB Connected'))
+  .catch(err => console.error('❌ MongoDB Error:', err));
+
+// Schema definition (used for all collections)
+const messageSchema = new mongoose.Schema({
+  message: String,
+  timestamp: { type: Date, default: Date.now }
+}, { strict: false });
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Handle chat room route
+// Chat room route
 app.get('/chat/:roomCode', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Function to get a model for a specific room
+function getRoomModel(roomCode) {
+  return mongoose.model(roomCode, messageSchema, roomCode);
+}
+
 io.on('connection', (socket) => {
-  console.log('A user connected');
+  console.log('⚡ A user connected');
 
-  socket.on('join room', async (roomCode) => {
+  socket.on('join room', (roomCode) => {
     socket.join(roomCode);
-    console.log(`User joined room: ${roomCode}`);
-
-    // Fetch and send previous messages
-    const previousMessages = await Message.find({ roomCode }).sort({ timestamp: 1 });
-    socket.emit('previous messages', previousMessages);
+    console.log(`🚪 User joined room: ${roomCode}`);
   });
 
   socket.on('chat message', async (msg, roomCode) => {
     io.to(roomCode).emit('chat message', msg);
 
-    // Save message to MongoDB
+    // Save to MongoDB dynamically
     try {
-      const message = new Message({ roomCode, message: msg });
-      await message.save();
+      const RoomModel = getRoomModel(roomCode);
+      const newMessage = new RoomModel({ message: msg });
+      await newMessage.save();
     } catch (err) {
       console.error('❌ Error saving message:', err);
     }
   });
 
   socket.on('disconnect', () => {
-    console.log('A user disconnected');
+    console.log('🔌 A user disconnected');
   });
 });
 
