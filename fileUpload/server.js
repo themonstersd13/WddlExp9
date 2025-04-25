@@ -4,7 +4,7 @@ const fs      = require('fs');
 const path    = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3500;
+const PORT = process.env.PORT || 3200;
 
 // ─── 1. SERVE public/ ─────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
